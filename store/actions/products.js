@@ -6,7 +6,8 @@ export const UPDATE_PRODUCT = 'UPDATE_PRODUCT';
 export const SET_PRODUCTS = 'SET_PRODUCTS';
 
 export const fetchProducts = () => {
-  return async dispatch => {
+  return async (dispatch, getState) => {
+    const userId = getState().auth.userId;
     try {
       const response = await fetch(
         'https://rn-shop-application.firebaseio.com/products.json'
@@ -26,7 +27,7 @@ export const fetchProducts = () => {
         loadedProducts.push(
           new Product(
             key,
-            'u1',
+            product.ownerId,
             product.title,
             product.imageUrl,
             product.description,
@@ -35,7 +36,11 @@ export const fetchProducts = () => {
         );
       }
 
-      dispatch({ type: SET_PRODUCTS, products: loadedProducts });
+      dispatch({
+        type: SET_PRODUCTS,
+        products: loadedProducts,
+        userProducts: loadedProducts.filter(prod => prod.ownerId === userId)
+      });
     } catch (err) {
       // send to custom analytics server
       throw err;
@@ -44,7 +49,8 @@ export const fetchProducts = () => {
 };
 
 export const deleteProduct = productId => {
-  return async dispatch => {
+  return async (dispatch, getState) => {
+    const token = getState().auth.token;
     const response = await fetch(
       `https://rn-shop-application.firebaseio.com/products/${productId}.json`,
       {
@@ -54,16 +60,19 @@ export const deleteProduct = productId => {
     dispatch({ type: DELETE_PRODUCT, pid: productId });
 
     if (!response.ok) {
-      throw Error('Something went wrong!')
+      throw Error('Something went wrong!');
     }
   };
 };
 
 export const createProduct = (title, description, imageUrl, price) => {
   // redux thunk will call this function and dispatches new action
-  return async dispatch => {
+  return async (dispatch, getState) => {
+    const token = getState().auth.token;
+    const ownerId = getState().auth.userId;
+
     const response = await fetch(
-      'https://rn-shop-application.firebaseio.com/products.json',
+      `https://rn-shop-application.firebaseio.com/products.json`,
       {
         method: 'POST',
         headers: {
@@ -75,7 +84,7 @@ export const createProduct = (title, description, imageUrl, price) => {
           description,
           imageUrl,
           price,
-          ownerId: 'u1'
+          ownerId
         })
       }
     );
@@ -90,7 +99,8 @@ export const createProduct = (title, description, imageUrl, price) => {
         title,
         description,
         imageUrl,
-        price
+        price,
+        ownerId
       }
     });
     // redux thunk enables us to make async calls before dispatching an action
@@ -98,7 +108,8 @@ export const createProduct = (title, description, imageUrl, price) => {
 };
 
 export const updateProduct = (id, title, description, imageUrl) => {
-  return async dispatch => {
+  return async (dispatch, getState) => {
+    const token = getState().auth.token;
     const response = await fetch(
       `https://rn-shop-application.firebaseio.com/products/${id}.json`,
       {

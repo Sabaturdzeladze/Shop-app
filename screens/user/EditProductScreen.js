@@ -91,7 +91,6 @@ const EditProductScreen = props => {
     setIsLoading(true);
     try {
       if (editedProduct) {
-        console.log(formState.inputValues.title);
         await dispatch(
           productsActions.updateProduct(
             prodId,
